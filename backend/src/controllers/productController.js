@@ -15,7 +15,7 @@ const detail = asyncHandler(async (req, res) => {
   if (!product) {
     return res.status(404).json();
   }
-  return ok(res, product);
+  return ok(res);
 });
 
 const bySlug = asyncHandler(async (req, res) => {
