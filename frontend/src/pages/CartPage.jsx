@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { cartApi } from '../api/cart';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import Price from '../components/Price';
 import Spinner from '../components/Spinner';
@@ -9,30 +10,13 @@ import Spinner from '../components/Spinner';
 export default function CartPage() {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const load = () => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    cartApi
-      .get()
-      .then(setCart)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(load, [isAuthenticated]);
+  const { cart, loading, error, refreshCart } = useCart();
 
   const changeQty = async (item, qty) => {
     if (qty < 1) return;
     try {
       await cartApi.updateItem(item.id, qty);
-      load();
+      await refreshCart();
     } catch (err) {
       toast(err.message, 'error');
     }
@@ -41,7 +25,7 @@ export default function CartPage() {
   const remove = async (itemId) => {
     try {
       await cartApi.removeItem(itemId);
-      load();
+      await refreshCart();
     } catch (err) {
       toast(err.message, 'error');
     }

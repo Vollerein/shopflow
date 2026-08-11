@@ -169,6 +169,20 @@ code {
   color: #92400e;
 }
 
+.cart-badge {
+  margin-left: 8px;
+  min-width: 24px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;

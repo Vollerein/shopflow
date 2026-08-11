@@ -4,6 +4,7 @@ import { productsApi } from '../api/products';
 import { cartApi } from '../api/cart';
 import { wishlistApi } from '../api/cart';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import Price from '../components/Price';
 import Spinner from '../components/Spinner';
@@ -11,6 +12,7 @@ import Spinner from '../components/Spinner';
 export default function ProductPage() {
   const { slug } = useParams();
   const { isAuthenticated } = useAuth();
+  const { refreshCart } = useCart();
   const { toast } = useToast();
 
   const [product, setProduct] = useState(null);
@@ -47,6 +49,7 @@ export default function ProductPage() {
     try {
       await cartApi.addItem(product.id, quantity, variantId);
       toast('Added to cart', 'success');
+      refreshCart();
     } catch (err) {
       toast(err.message, 'error');
     } finally {
