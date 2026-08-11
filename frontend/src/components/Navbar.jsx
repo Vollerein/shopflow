@@ -1,8 +1,10 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
   const { user, isAuthenticated, isAdmin, isStaff, logout } = useAuth();
+  const { cart } = useCart();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -13,6 +15,10 @@ export default function Navbar() {
   const linkClass = ({ isActive }) =>
     `nav-link${isActive ? ' active' : ''}`;
 
+  const cartItemCount = cart?.items
+    ? cart.items.reduce((sum, item) => sum + (item.quantity || 1), 0)
+    : 0;
+
   return (
     <header className="navbar">
       <Link to="/" className="brand">
@@ -22,9 +28,17 @@ export default function Navbar() {
         <NavLink to="/" className={linkClass} end>
           Catalog
         </NavLink>
+        
+        {/* Cart Link with Live Badge */}
         <NavLink to="/cart" className={linkClass}>
           Cart
+          {isAuthenticated && cartItemCount > 0 && (
+            <span className="cart-badge">
+              {cartItemCount > 99 ? '99+' : cartItemCount}
+            </span>
+          )}
         </NavLink>
+
         {isAuthenticated && (
           <NavLink to="/orders" className={linkClass}>
             Orders
