@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { cartApi } from '../api/cart';
+import { cartApi, dispatchCartUpdated } from '../api/cart';
 import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import Price from '../components/Price';
 import Spinner from '../components/Spinner';

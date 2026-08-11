@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { productsApi } from '../api/products';
-import { cartApi } from '../api/cart';
+import { cartApi, dispatchCartUpdated } from '../api/cart';
 import { wishlistApi } from '../api/cart';
 import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import Price from '../components/Price';
 import Spinner from '../components/Spinner';
@@ -12,7 +11,6 @@ import Spinner from '../components/Spinner';
 export default function ProductPage() {
   const { slug } = useParams();
   const { isAuthenticated } = useAuth();
-  const { refreshCart } = useCart();
   const { toast } = useToast();
 
   const [product, setProduct] = useState(null);
