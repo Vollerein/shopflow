@@ -174,15 +174,39 @@ async function getUserOrder(orderId) {
   return order;
 }
 
-async function cancelOrder(userId, orderId) {   
-  const order = await models.Order.findOne({ 
-    where: { id: orderId, userId } });   
-  if (!order) throw ApiError.notFound('Order not found');   
-  if (!['pending', 'paid'].includes(order.status)) 
-    {     
-      throw ApiError.badRequest('This order can no longer be cancelled');   
+async function cancelOrder(userId, orderId) {
+  const order = await models.Order.findOne({
+    where: { id: orderId, userId },
+  });
+
+  if (!order) throw ApiError.notFound('Order not found');
+
+  if (!['pending', 'paid'].includes(order.status)) {
+    throw ApiError.badRequest('This order can no longer be cancelled');
+  }
+
+  const orderItems = await models.OrderItem.findAll({
+    where: { orderId: order.id },
+  });
+
+  for (const item of orderItems) {
+    const where = item.variantId
+      ? { variantId: item.variantId }
+      : { productId: item.productId, variantId: null };
+
+    const inventory = await models.Inventory.findOne({ where });
+
+    if (inventory) {
+      inventory.quantity += item.quantity;
+      await inventory.save();
     }
-  return order 
+  }
+
+  order.status = 'cancelled';
+  order.paymentStatus = 'failed';
+  await order.save();
+
+  return order;
 }
 
 async function listAllOrders(query) {
