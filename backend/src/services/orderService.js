@@ -9,7 +9,6 @@ const mailer = require('./mailer');
 const { writeAudit } = require('../utils/audit');
 const { buildPagination } = require('../utils/paginate');
 const { Order, OrderItem, Inventory, sequelize } = require('../models');
-const ApiError = require('../utils/ApiError');
 
 async function cancelOrder(orderId, userId, userRole) {
   return await sequelize.transaction(async (transaction) => {
