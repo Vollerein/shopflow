@@ -559,6 +559,20 @@ textarea:focus {
   top: 80px;
 }
 
+.cart-badge {
+  margin-left: 0.35rem;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  padding: 0.1rem 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 .summary-row {
   display: flex;
   justify-content: space-between;
