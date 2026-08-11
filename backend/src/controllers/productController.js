@@ -44,6 +44,11 @@ const createVariant = asyncHandler(async (req, res) => {
   return created(res, variant);
 });
 
+const related = asyncHandler(async (req, res) => {
+  const products = await productService.getRelatedProducts(req.params.id, Number(req.query.limit) || 6);
+  return ok(res, products);
+});
+
 const listReviews = asyncHandler(async (req, res) => {
   const result = await reviewService.listByProduct(req.params.id, req.query);
   return ok(res, result.rows, {
@@ -57,4 +62,4 @@ const createReview = asyncHandler(async (req, res) => {
   return created(res, review);
 });
 
-module.exports = { list, detail, bySlug, create, update, remove, createVariant, listReviews, createReview };
+module.exports = { list, detail, bySlug, create, update, remove, createVariant, listReviews, createReview, related };
