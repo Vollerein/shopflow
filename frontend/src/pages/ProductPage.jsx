@@ -46,6 +46,7 @@ export default function ProductPage() {
     setAdding(true);
     try {
       await cartApi.addItem(product.id, quantity, variantId);
+      window.dispatchEvent(new CustomEvent('cart:updated'));
       toast('Added to cart', 'success');
     } catch (err) {
       toast(err.message, 'error');
