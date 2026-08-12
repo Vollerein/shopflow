@@ -60,6 +60,7 @@ async function getDashboardStats() {
 async function getSalesReport({ from, to }) {
   const fromDate = from ? new Date(from) : new Date(Date.now() - 30 * DAY_MS);
   const toDate = to ? new Date(to) : new Date();
+  toDate.setHours(23, 59, 59, 999);
 
   const orders = await models.Order.findAll({
     where: {
