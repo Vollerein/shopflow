@@ -26,14 +26,31 @@ async function listProducts(query) {
 }
 
 async function getProductBySlug(slug) {
-  return models.Product.findOne({
+  const product = await models.Product.findOne({
     where: { slug, is_active: true },
     include: [
       { model: models.Category, as: 'category' },
-      { model: models.ProductVariant, as: 'variants', where: { is_active: true }, required: false },
+      {
+        model: models.ProductVariant,
+        as: 'variants',
+        where: { is_active: true },
+        required: false,
+        include: [{ model: models.Inventory, as: 'inventory' }],
+      },
       { model: models.Inventory, as: 'inventory' },
     ],
   });
+  if (!product) return null;
+
+  const json = product.toJSON();
+  return {
+    ...json,
+    stock: json.inventory?.quantity ?? 0,
+    variants: (json.variants || []).map((variant) => ({
+      ...variant,
+      stock: variant.inventory?.quantity ?? 0,
+    })),
+  };
 }
 
 async function listFeatured(limit = 8) {

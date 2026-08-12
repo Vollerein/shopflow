@@ -72,6 +72,8 @@ export default function ProductPage() {
   if (!product) return <div className="container"><div className="alert alert-error">Product not found</div></div>;
 
   const selectedVariant = product.variants?.find((v) => v.id === variantId);
+  const stock = selectedVariant ? selectedVariant.stock ?? 0 : product.stock ?? 0;
+  const outOfStock = stock === 0;
 
   return (
     <div className="container">
@@ -119,10 +121,11 @@ export default function ProductPage() {
               id="qty"
               type="number"
               min="1"
-              max={product.stock ?? 99}
+              max={Math.max(stock, 1)}
               value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+              onChange={(e) => setQuantity(Math.min(Math.max(1, Number(e.target.value) || 1), Math.max(stock, 1)))}
             />
+            {outOfStock && <p className="muted">Out of stock</p>}
           </div>
 
           <div className="product-actions">
@@ -130,9 +133,9 @@ export default function ProductPage() {
               type="button"
               className="btn btn-primary"
               onClick={handleAddToCart}
-              disabled={adding || product.stock === 0}
+              disabled={adding || outOfStock}
             >
-              {product.stock === 0 ? 'Out of stock' : adding ? 'Adding…' : 'Add to cart'}
+              {outOfStock ? 'Out of stock' : adding ? 'Adding…' : 'Add to cart'}
             </button>
             <button type="button" className="btn btn-outline" onClick={handleToggleWishlist}>
               ♡ Wishlist
