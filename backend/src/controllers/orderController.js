@@ -19,7 +19,7 @@ const detail = asyncHandler(async (req, res) => {
 });
 
 const cancel = asyncHandler(async (req, res) => {
-  const order = await orderService.cancelOrder(req.user.id, req.params.orderId);
+  const order = await orderService.cancelOrder(req.user.id, req.params.orderId, { ip: req.ip });
   return ok(res, order);
 });
 
