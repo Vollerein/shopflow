@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { body } = require('express-validator');
 const { requireAuth } = require('../middleware/auth');
+const requireVerifiedEmail = require('../middleware/requireVerifiedEmail');
 const { validate } = require('../middleware/validate');
 const orderController = require('../controllers/orderController');
 
@@ -8,6 +9,7 @@ router.use(requireAuth);
 
 router.post(
   '/',
+  requireVerifiedEmail,
   validate([
     body('addressId').isInt().withMessage('addressId is required'),
     body('couponCode').optional().isString(),
