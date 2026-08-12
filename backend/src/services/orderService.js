@@ -179,7 +179,10 @@ async function countOrders() {
 }
 
 async function cancelOrder(userId, orderId) {
-  const order = await models.Order.findOne({ where: { id: orderId, userId } });
+  const order = await models.Order.findOne({
+    where: { id: orderId, userId },
+    include: [{ model: models.OrderItem, as: 'items' }],
+  });
   if (!order) throw ApiError.notFound('Order not found');
   if (!['pending', 'paid'].includes(order.status)) {
     throw ApiError.badRequest('This order can no longer be cancelled');
@@ -188,6 +191,14 @@ async function cancelOrder(userId, orderId) {
   order.status = 'cancelled';
   order.paymentStatus = 'failed';
   await order.save();
+
+  for (const item of order.items || []) {
+    const inventory = await inventoryFor(item);
+    if (inventory) {
+      inventory.quantity += item.quantity;
+      await inventory.save();
+    }
+  }
 
   await notificationService.create(userId, {
     type: 'order_cancelled',
