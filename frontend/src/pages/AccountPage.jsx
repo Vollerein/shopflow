@@ -1,28 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { userApi } from '../api/users';
 import { authApi } from '../api/auth';
 
 export default function AccountPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const [bio, setBio] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    userApi
-      .getMe()
-      .then((me) => setBio(me.profile?.bio || ''))
-      .catch(() => {});
-  }, []);
+    setBio(user?.profile?.bio ?? '');
+  }, [user]);
 
   const saveProfile = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const updated = await userApi.updateMe({ bio });
-      authApi.saveUser(updated);
+      await authApi.updateMe({ bio });
+      await refreshUser();
       toast('Profile updated', 'success');
     } catch (err) {
       toast(err.message, 'error');
