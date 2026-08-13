@@ -19,56 +19,6 @@ const { writeAudit } = require('../utils/audit');
 const { buildPagination } = require('../utils/paginate');
 const { Order, OrderItem, Inventory, sequelize } = require('../models');
 
-async function cancelOrder(orderId, userId, userRole) {
-  return await sequelize.transaction(async (transaction) => {
-    // 1. Fetch order with items
-    const order = await Order.findOne({
-      where: { id: orderId },
-      include: [{ model: OrderItem, as: 'items' }],
-      transaction
-    });
-
-    if (!order) {
-      throw new ApiError(404, 'Order not found');
-    }
-
-    // 2. Validate ownership & state
-    if (userRole !== 'ADMIN' && order.user_id !== userId) {
-      throw new ApiError(403, 'Unauthorized to cancel this order');
-    }
-
-    if (['SHIPPED', 'DELIVERED', 'CANCELLED'].includes(order.status)) {
-      throw new ApiError(400, 'Order cannot be cancelled in its current status');
-    }
-
-    // 3. Return reserved items to inventory
-    for (const item of order.items) {
-      const inventory = await Inventory.findOne({
-        where: { variant_id: item.variant_id },
-        transaction
-      });
-
-      if (inventory) {
-        await inventory.increment('quantity', {
-          by: item.quantity,
-          transaction
-        });
-      }
-    }
-
-    // 4. Update order status
-    order.status = 'CANCELLED';
-    await order.save({ transaction });
-
-    return order;
-  });
-}
-
-module.exports = {
-  // ... existing exports
-  cancelOrder
-};
-
 function generateOrderNumber() {
   const suffix = Date.now().toString().slice(-8);
   const rand = Math.floor(Math.random() * 9000 + 1000);
@@ -327,7 +277,7 @@ async function cancelOrder(userId, orderId) {
     }
   }
 
-  const orderItems = await models.OrderItem.findAll({ where: { orderId: order.id } });
+  const updateOrderItems = await models.OrderItem.findAll({ where: { orderId: order.id } });
 
   for (const item of orderItems) {
     const inventory = await inventoryFor(item);
