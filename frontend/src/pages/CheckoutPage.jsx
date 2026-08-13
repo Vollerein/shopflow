@@ -8,6 +8,7 @@ import Spinner from '../components/Spinner';
 
 export default function CheckoutPage() {
   const { toast } = useToast();
+  const { refresh: refreshCart } = useCart();
   const navigate = useNavigate();
 
   const [cart, setCart] = useState(null);
@@ -86,6 +87,7 @@ export default function CheckoutPage() {
         couponCode: couponCode || undefined,
       });
       toast('Order placed', 'success');
+      refreshCart();
       navigate(`/orders/${order.id}`);
     } catch (err) {
       setError(err.message);
@@ -104,6 +106,13 @@ export default function CheckoutPage() {
       </div>
     );
   }
+
+  const discountCents = coupon
+    ? coupon.discountType === 'percent'
+      ? Math.floor((cart.subtotalCents * coupon.discountValue) / 100)
+      : Math.min(coupon.discountValue, cart.subtotalCents)
+    : 0;
+  const totalCents = Math.max(cart.subtotalCents - discountCents + cart.shippingCents + cart.taxCents, 0);
 
   return (
     <div className="container">
