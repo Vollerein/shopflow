@@ -1,13 +1,25 @@
 const catalogService = require('../services/catalogService');
 const productService = require('../services/productService');
 const reviewService = require('../services/reviewService');
+const ApiError = require('../utils/ApiError');
 const { ok, created } = require('../utils/response');
 const { buildMeta } = require('../utils/paginate');
 const asyncHandler = require('../utils/asyncHandler');
 
 const list = asyncHandler(async (req, res) => {
+  const { sort } = req.query;
+  if (sort !== undefined && !catalogService.SORT_OPTIONS.includes(sort)) {
+    throw ApiError.badRequest(`Invalid sort value "${sort}". Allowed: ${catalogService.SORT_OPTIONS.join(', ')}`);
+  }
+
   const result = await catalogService.listProducts(req.query);
-  return ok(res, result.rows, buildMeta(result.count, result.page, result.limit));
+
+  const filters = {};
+  ['q', 'category', 'brand', 'min_price', 'max_price', 'inStock', 'sort'].forEach((key) => {
+    if (req.query[key] !== undefined) filters[key] = req.query[key];
+  });
+
+  return ok(res, result.rows, { ...buildMeta(result.count, result.page, result.limit), filters });
 });
 
 const detail = asyncHandler(async (req, res) => {
