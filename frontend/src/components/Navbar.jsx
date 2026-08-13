@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { cartApi } from '../api/cart';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
   const { user, isAuthenticated, isAdmin, isStaff, logout } = useAuth();
+  const { count } = useCart();
   const navigate = useNavigate();
   const [cartCount, setCartCount] = useState(0);
 
@@ -54,7 +56,8 @@ export default function Navbar() {
           Catalog
         </NavLink>
         <NavLink to="/cart" className={linkClass}>
-          Cart{cartCount > 0 ? ` (${cartCount})` : ''}
+          Cart
+          {isAuthenticated && count > 0 && <span className="cart-badge">{count}</span>}
         </NavLink>
         {isAuthenticated && (
           <NavLink to="/orders" className={linkClass}>

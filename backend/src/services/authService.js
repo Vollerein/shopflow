@@ -52,8 +52,10 @@ async function login({ email, password }) {
     throw ApiError.forbidden('This account has been disabled');
   }
 
+  if (user.profile) {
   user.profile.lastLoginAt = new Date();
   await user.profile.save();
+}
 
   const roleName = user.role ? user.role.name : 'customer';
   const accessToken = tokenUtils.signAccessToken({ id: user.id, roleName });
@@ -112,7 +114,7 @@ async function forgotPassword({ email }) {
 }
 
 async function resetPassword({ token, password }) {
-  const record = await models.PasswordReset.findOne({ where: { tokenHash: token } });
+  const record = await models.PasswordReset.findOne({ where: { tokenHash: hashToken(token) } });
   if (!record) throw ApiError.badRequest('Invalid or expired reset token');
   if (record.usedAt) throw ApiError.badRequest('This reset link has already been used');
   if (record.expiresAt.getTime() < Date.now()) throw ApiError.badRequest('This reset link has expired');
