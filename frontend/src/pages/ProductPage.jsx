@@ -5,6 +5,7 @@ import { cartApi } from '../api/cart';
 import { wishlistApi } from '../api/cart';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useCart } from '../context/CartContext';
 import Price from '../components/Price';
 import Spinner from '../components/Spinner';
 
@@ -12,6 +13,7 @@ export default function ProductPage() {
   const { slug } = useParams();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { refresh: refreshCart } = useCart();
 
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
@@ -47,6 +49,7 @@ export default function ProductPage() {
     try {
       await cartApi.addItem(product.id, quantity, variantId);
       toast('Added to cart', 'success');
+      refreshCart();
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -72,8 +75,12 @@ export default function ProductPage() {
   if (!product) return <div className="container"><div className="alert alert-error">Product not found</div></div>;
 
   const selectedVariant = product.variants?.find((v) => v.id === variantId);
-  const stock = selectedVariant ? selectedVariant.stock ?? 0 : product.stock ?? 0;
-  const outOfStock = stock === 0;
+  const hasVariants = (product.variants?.length ?? 0) > 0;
+  const productStock = product.stock ?? product.inventory?.quantity ?? 0;
+  const stock =
+    hasVariants && selectedVariant
+      ? (selectedVariant.stock ?? selectedVariant.inventory?.quantity ?? 0)
+      : productStock;
 
   return (
     <div className="container">
@@ -121,7 +128,7 @@ export default function ProductPage() {
               id="qty"
               type="number"
               min="1"
-              max={Math.max(stock, 1)}
+              max={stock || 99}
               value={quantity}
               onChange={(e) => setQuantity(Math.min(Math.max(1, Number(e.target.value) || 1), Math.max(stock, 1)))}
             />
@@ -133,9 +140,9 @@ export default function ProductPage() {
               type="button"
               className="btn btn-primary"
               onClick={handleAddToCart}
-              disabled={adding || outOfStock}
+              disabled={adding || stock === 0}
             >
-              {outOfStock ? 'Out of stock' : adding ? 'Adding…' : 'Add to cart'}
+              {stock === 0 ? 'Out of stock' : adding ? 'Adding…' : 'Add to cart'}
             </button>
             <button type="button" className="btn btn-outline" onClick={handleToggleWishlist}>
               ♡ Wishlist
