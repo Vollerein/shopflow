@@ -70,12 +70,12 @@ function generateOrderNumber() {
   return `SF-${new Date().getFullYear()}-${suffix}${rand}`;
 }
 
-async function inventoryFor(item) {
+async function inventoryFor(item, transaction) {
   const where = item.variantId
     ? { variantId: item.variantId }
     : { productId: item.productId, variantId: null };
 
-  return models.Inventory.findOne({ where });
+  return models.Inventory.findOne({ where, transaction });
 }
 
 async function createOrder(userId, { addressId, couponCode, paymentMethod }, options = {}) {
@@ -285,48 +285,48 @@ async function getUserOrder(userId, orderId) {
 }
 
 async function cancelOrder(userId, orderId) {
-  const order = await models.Order.findOne({
-    where: {
-      id: orderId,
-      userId,
-    },
-  });
+  const order = await sequelize.transaction(async (transaction) => {
+    const current = await models.Order.findOne({
+      where: { id: orderId, userId },
+      transaction,
+    });
 
-  if (!order) {
-    throw ApiError.notFound('Order not found');
-  }
-
-  if (!['pending', 'paid'].includes(order.status)) {
-    throw ApiError.badRequest(
-      'This order can no longer be cancelled'
-    );
-  }
-
-  /*
-   * C02 FIX:
-   * Return the reserved stock back to inventory when
-   * an order is cancelled.
-   */
-
-  const orderItems = await models.OrderItem.findAll({
-    where: {
-      orderId: order.id,
-    },
-  });
-
-  for (const item of orderItems) {
-    const inventory = await inventoryFor(item);
-
-    if (inventory) {
-      inventory.quantity += item.quantity;
-      await inventory.save();
+    if (!current) {
+      throw ApiError.notFound('Order not found');
     }
-  }
 
-  order.status = 'cancelled';
-  order.paymentStatus = 'failed';
+    if (!['pending', 'paid'].includes(current.status)) {
+      throw ApiError.badRequest(
+        'This order can no longer be cancelled'
+      );
+    }
 
-  await order.save();
+    /*
+     * C02: return the reserved stock back to inventory when
+     * an order is cancelled, so a cancelled order does not
+     * leave inventory short.
+     */
+    const orderItems = await models.OrderItem.findAll({
+      where: { orderId: current.id },
+      transaction,
+    });
+
+    for (const item of orderItems) {
+      const inventory = await inventoryFor(item, transaction);
+
+      if (inventory) {
+        inventory.quantity += item.quantity;
+        await inventory.save({ transaction });
+      }
+    }
+
+    current.status = 'cancelled';
+    current.paymentStatus = 'failed';
+
+    await current.save({ transaction });
+
+    return current;
+  });
 
   await notificationService.create(userId, {
     type: 'order_cancelled',
