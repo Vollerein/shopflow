@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cartApi } from '../api/cart';
 import { ordersApi, addressApi, couponsApi } from '../api/orders';
@@ -17,18 +17,25 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState('');
   const [coupon, setCoupon] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState(null);
 
+  const loadCart = useCallback(
+    (country, appliedCode) => cartApi.get({ country, coupon: appliedCode || undefined }),
+    []
+  );
+
   useEffect(() => {
-    Promise.all([cartApi.get(), addressApi.list().catch(() => [])])
+    Promise.all([loadCart('US'), addressApi.list().catch(() => [])])
       .then(([c, a]) => {
         setCart(c);
         setAddresses(a);
+        setLoaded(true);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadCart]);
 
   const [form, setForm] = useState({
     addressId: '',
@@ -41,6 +48,17 @@ export default function CheckoutPage() {
   });
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const effectiveCountry = form.addressId
+    ? (addresses.find((a) => a.id === Number(form.addressId)) || {}).country || form.country
+    : form.country;
+
+  useEffect(() => {
+    if (!loaded) return;
+    loadCart(effectiveCountry, coupon?.code)
+      .then(setCart)
+      .catch((err) => setError(err.message));
+  }, [loaded, effectiveCountry, coupon, loadCart]);
 
   const validateCoupon = async () => {
     try {
@@ -94,13 +112,6 @@ export default function CheckoutPage() {
       </div>
     );
   }
-
-  const discountCents = coupon
-    ? coupon.discountType === 'percent'
-      ? Math.floor((cart.subtotalCents * coupon.discountValue) / 100)
-      : Math.min(coupon.discountValue, cart.subtotalCents)
-    : 0;
-  const totalCents = Math.max(cart.subtotalCents - discountCents + cart.shippingCents + cart.taxCents, 0);
 
   return (
     <div className="container">
@@ -187,10 +198,10 @@ export default function CheckoutPage() {
             <span>Subtotal</span>
             <Price cents={cart.subtotalCents} />
           </div>
-          {coupon && (
+          {cart.discountCents > 0 && (
             <div className="summary-row">
               <span>Discount</span>
-              <span className="discount">−<Price cents={discountCents} /></span>
+              <span className="discount">−<Price cents={cart.discountCents} /></span>
             </div>
           )}
           <div className="summary-row">
@@ -203,7 +214,7 @@ export default function CheckoutPage() {
           </div>
           <div className="summary-row total">
             <span>Total</span>
-            <Price cents={totalCents} />
+            <Price cents={cart.totalCents} />
           </div>
           <button type="button" className="btn btn-primary btn-block" onClick={placeOrder} disabled={placing}>
             {placing ? 'Placing order…' : 'Place order'}

@@ -3,7 +3,10 @@ const { ok } = require('../utils/response');
 const asyncHandler = require('../utils/asyncHandler');
 
 const get = asyncHandler(async (req, res) => {
-  const cart = await cartService.getCart(req.user.id);
+  const cart = await cartService.getCart(req.user.id, {
+    country: req.query.country,
+    coupon: req.query.coupon,
+  });
   return ok(res, cart);
 });
 

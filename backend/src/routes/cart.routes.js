@@ -1,12 +1,19 @@
 const router = require('express').Router();
-const { body } = require('express-validator');
+const { body, query } = require('express-validator');
 const { requireAuth } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const cartController = require('../controllers/cartController');
 
 router.use(requireAuth);
 
-router.get('/', cartController.get);
+router.get(
+  '/',
+  validate([
+    query('country').optional().isLength({ min: 2, max: 2 }).withMessage('Country must be a 2-letter code'),
+    query('coupon').optional().isString().trim().isLength({ max: 50 }).withMessage('Invalid coupon code'),
+  ]),
+  cartController.get
+);
 
 router.post(
   '/items',

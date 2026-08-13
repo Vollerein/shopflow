@@ -1,6 +1,7 @@
 const { models } = require('../models');
 const ApiError = require('../utils/ApiError');
 const pricingService = require('./pricingService');
+const couponService = require('./couponService');
 
 async function getOrCreateCart(userId) {
   let cart = await models.Cart.findOne({ where: { userId, status: 'active' } });
@@ -22,13 +23,13 @@ async function stockFor({ productId, variantId }) {
   return inventory ? inventory.quantity : 0;
 }
 
-function buildTotals(items) {
+function buildTotals(items, country, coupon) {
   const subtotalCents = items.reduce((sum, item) => sum + item.unitPriceCents * item.quantity, 0);
-  const totals = pricingService.calculateTotals({ subtotalCents });
+  const totals = pricingService.calculateTotals({ subtotalCents, country, coupon });
   return { ...totals, itemCount: items.reduce((sum, item) => sum + item.quantity, 0) };
 }
 
-async function getCart(userId) {
+async function getCart(userId, options = {}) {
   const cart = await getOrCreateCart(userId);
   const items = await models.CartItem.findAll({
     where: { cartId: cart.id },
@@ -46,7 +47,9 @@ async function getCart(userId) {
     })
   );
 
-  return { ...cart.toJSON(), items: enriched, ...buildTotals(items) };
+  const coupon = options.coupon ? await couponService.findByCode(options.coupon) : null;
+
+  return { ...cart.toJSON(), items: enriched, ...buildTotals(items, options.country, coupon) };
 }
 
 async function addItem(userId, { productId, variantId, quantity }) {
