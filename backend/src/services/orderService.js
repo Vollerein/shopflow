@@ -307,16 +307,18 @@ async function cancelOrder(userId, orderId) {
    * Return the reserved stock back to inventory when
    * an order is cancelled.
    */
-
+  
   const orderItems = await models.OrderItem.findAll({
     where: {
       orderId: order.id,
     },
   });
-
+  
   for (const item of orderItems) {
     const inventory = await inventoryFor(item);
-
+  }
+}
+    
 async function cancelOrder(userId, orderId) {
   const order = await models.Order.findOne({ where: { id: orderId, userId } });
   if (!order) throw ApiError.notFound('Order not found');
