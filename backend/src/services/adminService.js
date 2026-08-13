@@ -6,15 +6,27 @@ const { formatDateLegacy } = require('../utils/legacy');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function toStartOfDay(value) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function toEndOfDay(value) {
+  const date = new Date(value);
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
 async function getDashboardStats() {
   const today = formatDateLegacy(new Date());
 
   const [revenueTotal] = await sequelize.query(
-    `SELECT COALESCE(SUM(total_cents), 0) AS total FROM orders WHERE payment_status IN ('paid', 'refunded')`
+    `SELECT COALESCE(SUM(total_cents), 0) AS total FROM orders WHERE payment_status = 'paid'`
   );
 
   const [revenueToday] = await sequelize.query(
-    `SELECT COALESCE(SUM(total_cents), 0) AS total FROM orders WHERE payment_status IN ('paid', 'refunded') AND date(created_at) = '${today}'`
+    `SELECT COALESCE(SUM(total_cents), 0) AS total FROM orders WHERE payment_status = 'paid' AND date(created_at) = '${today}'`
   );
 
   const [ordersToday] = await sequelize.query(
@@ -58,8 +70,8 @@ async function getDashboardStats() {
 }
 
 async function getSalesReport({ from, to }) {
-  const fromDate = from ? new Date(from) : new Date(Date.now() - 30 * DAY_MS);
-  const toDate = to ? new Date(to) : new Date();
+  const fromDate = from ? toStartOfDay(from) : new Date(Date.now() - 30 * DAY_MS);
+  const toDate = to ? toEndOfDay(to) : new Date();
 
   const orders = await models.Order.findAll({
     where: {

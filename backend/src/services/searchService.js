@@ -1,6 +1,10 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 
+function escapeLike(value) {
+  return String(value).replace(/[\\%_]/g, (match) => `\\${match}`);
+}
+
 function buildSearchWhere(query) {
   const where = { is_active: true };
 
@@ -16,6 +20,9 @@ function buildSearchWhere(query) {
   if (query.max_price !== undefined) {
     where.price_cents = { ...(where.price_cents || {}), [Op.lte]: Number(query.max_price) };
   }
+  if (query.inStock === 'true' || query.inStock === '1') {
+    where['$inventory.quantity$'] = { [Op.gt]: 0 };
+  }
   if (query.q) {
     where[Op.and] = [searchClause(String(query.q))];
   }
@@ -24,9 +31,8 @@ function buildSearchWhere(query) {
 }
 
 function searchClause(q) {
-  return sequelize.where(sequelize.fn('LOWER', sequelize.col('Product.name')), {
-    [Op.like]: `%${q.toLowerCase()}%`,
-  });
+  const escaped = escapeLike(q.toLowerCase()).replace(/'/g, "''");
+  return sequelize.literal(`LOWER("Product"."name") LIKE '%${escaped}%' ESCAPE '\\'`);
 }
 
-module.exports = { buildSearchWhere, searchClause };
+module.exports = { buildSearchWhere, searchClause, escapeLike };
